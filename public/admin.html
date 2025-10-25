@@ -398,7 +398,13 @@ tr:hover{background:var(--bg-hover)}
 </div>
 
 <script>
-const API = '/drrms/api/index.php';
+// Smart API path detection
+const API = window.location.hostname === 'localhost' 
+    ? '/drrms/api/index.php'  // Local XAMPP
+    : '/api/index.php';       // Production Render
+
+console.log('Using API:', API); // Debug line - shows which API path is being used
+
 
 // NEW: Store admin full name for tracking
 const adminFullName = localStorage.getItem('userFullName') || localStorage.getItem('userName') || 'Admin';
