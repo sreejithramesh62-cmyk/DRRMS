@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DRRMS - Disaster Relief Resource Management System</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+
+body{
+  font-family:'Rajdhani',sans-serif;min-height:100vh;overflow:hidden;position:relative;
+  background:#000;
+}
+
+/* Animated disaster background */
+.disaster-bg{
+  position:fixed;inset:0;z-index:1;
+  background:
+    linear-gradient(135deg, rgba(10,14,26,0.95) 0%, rgba(26,31,58,0.9) 100%),
+    url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080"><defs><radialGradient id="g1"><stop offset="0%25" stop-color="%23ff4444" stop-opacity="0.3"/><stop offset="100%25" stop-color="%23000" stop-opacity="0"/></radialGradient></defs><circle cx="300" cy="200" r="400" fill="url(%23g1)"/><circle cx="1600" cy="800" r="500" fill="url(%23g1)"/></svg>');
+  background-size:cover;
+  animation:bgPulse 20s ease-in-out infinite;
+}
+@keyframes bgPulse{0%,100%{opacity:1}50%{opacity:0.85}}
+
+/* Lightning effect */
+.lightning{
+  position:absolute;inset:0;pointer-events:none;opacity:0;
+  background:linear-gradient(to bottom, rgba(255,255,255,0.8), transparent);
+  animation:flash 8s infinite;
+}
+@keyframes flash{
+  0%,90%,100%{opacity:0}
+  91%{opacity:0.6}
+  92%{opacity:0}
+  93%{opacity:0.8}
+  94%,100%{opacity:0}
+}
+
+/* Smoke particles */
+.smoke{
+  position:absolute;width:100%;height:100%;overflow:hidden;pointer-events:none;
+}
+.smoke-particle{
+  position:absolute;bottom:-100px;width:200px;height:200px;
+  background:radial-gradient(circle, rgba(212,175,55,0.15), transparent 70%);
+  border-radius:50%;opacity:0;
+  animation:riseSmoke 15s infinite;
+}
+.smoke-particle:nth-child(1){left:10%;animation-delay:0s;animation-duration:12s}
+.smoke-particle:nth-child(2){left:40%;animation-delay:3s;animation-duration:15s}
+.smoke-particle:nth-child(3){left:70%;animation-delay:6s;animation-duration:18s}
+@keyframes riseSmoke{
+  0%{transform:translateY(0) scale(0.5);opacity:0}
+  20%{opacity:0.6}
+  100%{transform:translateY(-1200px) scale(2);opacity:0}
+}
+
+/* Ember particles */
+.embers{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.ember{
+  position:absolute;width:3px;height:3px;background:#ff6b35;border-radius:50%;
+  box-shadow:0 0 10px #ff6b35;opacity:0;
+  animation:floatEmber 8s infinite;
+}
+.ember:nth-child(1){left:20%;animation-delay:0s}
+.ember:nth-child(2){left:40%;animation-delay:2s}
+.ember:nth-child(3){left:60%;animation-delay:4s}
+.ember:nth-child(4){left:80%;animation-delay:6s}
+@keyframes floatEmber{
+  0%{transform:translateY(100vh) translateX(0);opacity:0}
+  10%{opacity:1}
+  90%{opacity:1}
+  100%{transform:translateY(-100vh) translateX(50px);opacity:0}
+}
+
+/* Grid overlay */
+.grid-overlay{
+  position:absolute;inset:0;
+  background-image:
+    linear-gradient(rgba(212,175,55,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(212,175,55,0.03) 1px, transparent 1px);
+  background-size:50px 50px;
+  animation:gridMove 20s linear infinite;
+}
+@keyframes gridMove{from{background-position:0 0}to{background-position:50px 50px}}
+
+/* Main container */
+.container{
+  position:relative;z-index:10;min-height:100vh;display:grid;place-items:center;
+  padding:20px;
+}
+
+.login-box{
+  background:rgba(12,17,35,0.92);backdrop-filter:blur(20px);
+  border:2px solid rgba(212,175,55,0.3);border-radius:24px;
+  padding:50px 45px;width:100%;max-width:480px;
+  box-shadow:
+    0 0 60px rgba(212,175,55,0.15),
+    0 30px 90px rgba(0,0,0,0.8),
+    inset 0 1px 0 rgba(255,255,255,0.1);
+  animation:boxEntrance 1s cubic-bezier(0.16, 1, 0.3, 1);
+  position:relative;overflow:hidden;
+}
+@keyframes boxEntrance{
+  from{opacity:0;transform:translateY(60px) scale(0.9)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+
+/* Corner accents */
+.login-box::before,
+.login-box::after{
+  content:'';position:absolute;width:80px;height:80px;
+  border:3px solid rgba(212,175,55,0.5);
+}
+.login-box::before{top:0;left:0;border-right:none;border-bottom:none;border-radius:24px 0 0 0}
+.login-box::after{bottom:0;right:0;border-left:none;border-top:none;border-radius:0 0 24px 0}
+
+/* Logo */
+.logo-section{text-align:center;margin-bottom:40px}
+.logo-shield{
+  width:100px;height:100px;margin:0 auto 20px;position:relative;
+  animation:float 3s ease-in-out infinite;
+}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.logo-shield::before{
+  content:'⚠';font-size:60px;
+  position:absolute;inset:0;display:grid;place-items:center;
+  background:linear-gradient(135deg,#d4af37,#b8972f);
+  border-radius:20px;
+  box-shadow:
+    0 0 30px rgba(212,175,55,0.5),
+    0 10px 40px rgba(0,0,0,0.5);
+  animation:pulse 2s infinite;
+}
+@keyframes pulse{0%,100%{box-shadow:0 0 30px rgba(212,175,55,0.5)}50%{box-shadow:0 0 60px rgba(212,175,55,0.8)}}
+
+h1{
+  font-family:'Orbitron',sans-serif;font-size:36px;font-weight:900;
+  background:linear-gradient(135deg,#f4e5a8,#d4af37,#ff6b35);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  letter-spacing:2px;margin-bottom:10px;text-transform:uppercase;
+  animation:titleGlow 3s ease-in-out infinite;
+}
+@keyframes titleGlow{0%,100%{filter:drop-shadow(0 0 10px rgba(212,175,55,0.5))}50%{filter:drop-shadow(0 0 20px rgba(212,175,55,0.8))}}
+
+.subtitle{color:#8b96a8;font-size:15px;letter-spacing:1px;text-transform:uppercase}
+
+/* Tabs */
+.tabs{
+  display:flex;gap:15px;margin-bottom:35px;
+  background:rgba(0,0,0,0.3);padding:8px;border-radius:15px;
+  border:1px solid rgba(212,175,55,0.2);
+}
+.tab{
+  flex:1;padding:14px;border-radius:10px;cursor:pointer;text-align:center;
+  font-weight:700;font-size:15px;transition:.3s;border:2px solid transparent;
+  text-transform:uppercase;letter-spacing:1px;
+}
+.tab.active{
+  background:linear-gradient(135deg,rgba(212,175,55,0.25),rgba(255,107,53,0.15));
+  color:#d4af37;border-color:rgba(212,175,55,0.5);
+  box-shadow:0 0 20px rgba(212,175,55,0.3);
+}
+.tab:not(.active){color:#6b7280}
+.tab:not(.active):hover{background:rgba(255,255,255,0.05);color:#8b96a8}
+
+/* Form */
+.form-group{margin-bottom:25px;position:relative}
+.form-group label{
+  display:block;margin-bottom:10px;color:#f4e5a8;font-weight:700;
+  font-size:14px;text-transform:uppercase;letter-spacing:1px;
+}
+.input-wrapper{position:relative}
+.input-icon{
+  position:absolute;left:15px;top:50%;transform:translateY(-50%);
+  font-size:20px;opacity:0.6;
+}
+input{
+  width:100%;padding:16px 16px 16px 50px;border-radius:12px;
+  border:2px solid rgba(212,175,55,0.3);
+  background:rgba(0,0,0,0.4);color:#fff;font-size:15px;
+  transition:.3s;font-family:'Rajdhani',sans-serif;font-weight:600;
+}
+input:focus{
+  outline:none;border-color:#d4af37;
+  box-shadow:0 0 20px rgba(212,175,55,0.3);
+  background:rgba(0,0,0,0.6);
+}
+input::placeholder{color:#6b7280}
+
+.btn-submit{
+  width:100%;padding:18px;border-radius:12px;border:none;
+  background:linear-gradient(135deg,#d4af37,#ff6b35);
+  color:#000;font-weight:900;font-size:16px;cursor:pointer;
+  transition:.3s;text-transform:uppercase;letter-spacing:2px;
+  box-shadow:0 10px 30px rgba(212,175,55,0.4);
+  position:relative;overflow:hidden;
+}
+.btn-submit::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,transparent,rgba(255,255,255,0.3),transparent);
+  transform:translateX(-100%);transition:.5s;
+}
+.btn-submit:hover::before{transform:translateX(100%)}
+.btn-submit:hover{
+  transform:translateY(-3px);
+  box-shadow:0 15px 40px rgba(212,175,55,0.6);
+}
+.btn-submit:active{transform:translateY(-1px)}
+.btn-submit:disabled{opacity:0.6;cursor:not-allowed}
+
+.error{
+  background:rgba(239,68,68,0.2);color:#ff9b9b;padding:14px;
+  border-radius:10px;font-size:14px;margin-bottom:20px;
+  border:2px solid #ef4444;display:none;font-weight:600;
+  animation:shake 0.5s;
+}
+.error.show{display:block}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-10px)}75%{transform:translateX(10px)}}
+
+.footer{text-align:center;margin-top:30px;color:#6b7280;font-size:13px}
+.footer a{color:#d4af37;text-decoration:none;font-weight:700}
+.footer a:hover{text-decoration:underline;color:#ff6b35}
+
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+/* Alert banner */
+.alert-banner{
+  position:absolute;top:20px;left:50%;transform:translateX(-50%);
+  background:rgba(239,68,68,0.15);border:2px solid #ef4444;
+  padding:12px 24px;border-radius:10px;color:#ff9b9b;
+  font-weight:700;font-size:13px;text-transform:uppercase;
+  letter-spacing:1px;backdrop-filter:blur(10px);
+  animation:slideDown 0.5s ease, blink 2s infinite;
+}
+@keyframes slideDown{from{transform:translateX(-50%) translateY(-100%)}to{transform:translateX(-50%) translateY(0)}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.7}}
+</style>
+</head>
+<body>
+
+<!-- Background effects -->
+<div class="disaster-bg"></div>
+<div class="lightning"></div>
+<div class="smoke">
+  <div class="smoke-particle"></div>
+  <div class="smoke-particle"></div>
+  <div class="smoke-particle"></div>
+</div>
+<div class="embers">
+  <div class="ember"></div>
+  <div class="ember"></div>
+  <div class="ember"></div>
+  <div class="ember"></div>
+</div>
+<div class="grid-overlay"></div>
+
+<!-- Alert banner -->
+<div class="alert-banner">⚠ EMERGENCY RESPONSE SYSTEM ACTIVE</div>
+
+<div class="container">
+  <div class="login-box">
+    <div class="logo-section">
+      <img src="logo.jpg" alt="DRRMS Logo" style="width:100px;height:auto;margin-bottom:20px;border-radius:20px;"/>
+<h1>DRRMS</h1>
+      <p class="subtitle">Disaster Relief Resource Management System</p>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('admin')">Admin</div>
+      <div class="tab" onclick="switchTab('user')">User</div>
+    </div>
+
+    <div id="errorMsg" class="error"></div>
+
+    <!-- Admin Login -->
+    <div id="admin-content" class="tab-content active">
+      <form onsubmit="handleLogin(event, 'ADMIN')">
+        <div class="form-group">
+          <label>Admin Username</label>
+          <div class="input-wrapper">
+            <span class="input-icon">👤</span>
+            <input type="text" id="admin-username" placeholder="Enter admin username" required autocomplete="username"/>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <div class="input-wrapper">
+            <span class="input-icon">🔒</span>
+            <input type="password" id="admin-password" placeholder="Enter password" required autocomplete="current-password"/>
+          </div>
+        </div>
+        <button type="submit" class="btn-submit" id="admin-btn">Access System</button>
+      </form>
+    </div>
+
+    <!-- User Login -->
+    <div id="user-content" class="tab-content">
+      <form onsubmit="handleLogin(event, 'USER')">
+        <div class="form-group">
+          <label>Email or Phone</label>
+          <div class="input-wrapper">
+            <span class="input-icon">📧</span>
+            <input type="text" id="user-username" placeholder="Enter email or phone" required autocomplete="username"/>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <div class="input-wrapper">
+            <span class="input-icon">🔒</span>
+            <input type="password" id="user-password" placeholder="Enter password" required autocomplete="current-password"/>
+          </div>
+        </div>
+        <button type="submit" class="btn-submit" id="user-btn">Access System</button>
+      </form>
+      <div class="footer">
+        New user? <a href="register.html">Register Account</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = '/drrms/api/index.php';
+
+function switchTab(tab){
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById(tab + '-content').classList.add('active');
+  hideError();
+}
+
+function showError(msg){
+  const el = document.getElementById('errorMsg');
+  el.textContent = '⚠ ' + msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 5000);
+}
+
+function hideError(){
+  document.getElementById('errorMsg').classList.remove('show');
+}
+
+async function handleLogin(e, role){
+  e.preventDefault();
+  hideError();
+  
+  const prefix = role === 'ADMIN' ? 'admin' : 'user';
+  const btn = document.getElementById(prefix + '-btn');
+  const username = document.getElementById(prefix + '-username').value.trim();
+  const password = document.getElementById(prefix + '-password').value.trim();
+  
+  if(!username || !password){
+    showError('All fields are required');
+    return;
+  }
+  
+  btn.disabled = true;
+  btn.textContent = 'AUTHENTICATING...';
+  
+  try{
+    const res = await fetch(API + '/auth/login', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ username, password, role })
+    });
+    
+    const data = await res.json();
+    
+    if(data.success){
+  localStorage.setItem('userName', data.name);
+  localStorage.setItem('userFullName', data.full_name || data.name);
+  localStorage.setItem('userRole', data.role);
+  localStorage.setItem('userId', data.id);
+      setTimeout(() => {
+        location.href = role === 'ADMIN' ? 'admin.html' : 'user.html';
+      }, 500);
+    } else {
+      btn.disabled = false;
+      btn.textContent = 'ACCESS SYSTEM';
+      showError('Invalid credentials. Access denied.');
+    }
+  } catch(err){
+    btn.disabled = false;
+    btn.textContent = 'ACCESS SYSTEM';
+    showError('Connection error. Server offline.');
+    console.error('Login error:', err);
+  }
+}
+</script>
+</body>
+</html>
