@@ -341,9 +341,8 @@ tr:hover{background:var(--bg-hover)}
 
 <script>
 // Bulletproof API detection
-const API = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-    ? '/drrms/api/index.php'
-    : '/api/index.php';
+const API = 'drrms/api/index.php';
+
 
 console.log('Hostname:', window.location.hostname, '| API:', API);
 
