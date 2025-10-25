@@ -340,7 +340,13 @@ tr:hover{background:var(--bg-hover)}
 </div>
 
 <script>
-const API = '/drrms/api/index.php';
+// Bulletproof API detection
+const API = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? '/drrms/api/index.php'
+    : '/api/index.php';
+
+console.log('Hostname:', window.location.hostname, '| API:', API);
+
 const userName = localStorage.getItem('userName') || 'User';
 const userId = localStorage.getItem('userId') || 1;
 document.getElementById('userName').textContent = userName;
