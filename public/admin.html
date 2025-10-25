@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Disaster Relief Resource Management System(DRRMS)-Admin</title>
+<title>DRRMS Admin Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
@@ -167,10 +167,12 @@ tr:hover{background:var(--bg-hover)}
 <body>
 
 <aside class="sidebar">
-  <div class="logo" style="gap:16px;">
-    <img src="logo.jpg" alt="DRRMS" style="width:48px;height:48px;border-radius:8px;object-fit:contain;" onerror="this.src='logo.jpg'"/>
-    <h1>DRRMS</h1>
-  </div>
+  <div class="logo">
+  <img src="logo.jpg" alt="DRRMS Logo" style="width:48px;height:48px;border-radius:12px;"/>
+  <h1>DRRMS</h1>
+</div>
+
+
 
   <ul class="nav">
     <li class="nav-item"><a class="nav-link active" onclick="showTab('dashboard')">📊 Dashboard</a></li>
@@ -179,6 +181,9 @@ tr:hover{background:var(--bg-hover)}
     <li class="nav-item"><a class="nav-link" onclick="showTab('resources')">📦 Resources</a></li>
     <li class="nav-item"><a class="nav-link" onclick="showTab('requests')">📋 Requests</a></li>
     <li class="nav-item"><a class="nav-link" onclick="showTab('admins')">👤 Admins</a></li>
+    <li class="nav-item"><a class="nav-link" onclick="showTab('users')">👤 User Logins</a></li>
+
+
   </ul>
 </aside>
 
@@ -319,6 +324,20 @@ tr:hover{background:var(--bg-hover)}
       <div id="adminGrid" class="admin-grid"></div>
     </div>
   </div>
+  <div id="tab-users" class="tab-content">
+  <div class="panel">
+    <div class="panel-header">
+      <h2 class="panel-title">All User Logins</h2>
+      <button class="btn" onclick="loadUsers()">Refresh</button>
+    </div>
+    <table id="tblUsers">
+      <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Registered</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+
 
 </main>
 
@@ -407,6 +426,7 @@ function showTab(tab){
   if(tab === 'resources') loadResourcesFull();
   if(tab === 'requests') loadReqs();
   if(tab === 'admins') loadAdmins();
+  if (tab === 'users') loadUsers();  // ADD THIS LINE
 }
 
 async function loadDisasters(){
@@ -580,6 +600,26 @@ async function loadAdmins(){
     grid.appendChild(card);
   });
 }
+async function loadUsers(){
+  const data = await jget('/admin/get_users');
+  const tb = document.querySelector('#tblUsers tbody');
+  if(!tb) return;
+  tb.innerHTML = '';
+  data.forEach(u => {
+    const tr = document.createElement('tr');
+    const regDate = new Date(u.created_at).toLocaleDateString();
+    tr.innerHTML = `
+      <td>${u.user_id}</td>
+      <td><strong>${u.name}</strong></td>
+      <td>${u.email}</td>
+      <td>${u.phone || '—'}</td>
+      <td><span class="badge info">${regDate}</span></td>
+    `;
+    tb.appendChild(tr);
+  });
+}
+
+
 
 function openModal(action, id){ currentAction = action; currentId = id; document.getElementById('modalTitle').textContent = action === 'approve' ? 'Approve Request' : 'Reject Request'; document.getElementById('modal').classList.add('show'); }
 function closeModal(){ document.getElementById('modal').classList.remove('show'); document.getElementById('modalComment').value = ''; }
@@ -623,15 +663,23 @@ function openResourceModal(){ document.getElementById('resourceModal').classList
 function closeResourceModal(){ document.getElementById('resourceModal').classList.remove('show'); document.getElementById('resName').value = ''; document.getElementById('resQty').value = ''; }
 
 async function saveResource(){
-  const name = document.getElementById('resName').value.trim();
-  const qty = parseInt(document.getElementById('resQty').value) || 0;
-  if(!name || qty <= 0){ alert('Name and quantity required'); return; }
-  await jpost('/admin/add_resource', { resource_name:name, quantity:qty, center_id:1 });
-  alert('Resource added!');
-  closeResourceModal();
-  loadResourcesFull();
-  loadResources();
+  const name=document.getElementById('resName').value.trim();
+  const qty=parseInt(document.getElementById('resQty').value)||0;
+  if(!name||qty<=0){alert('Name and quantity required');return}
+  
+  try{
+    const result=await jpost('/admin/add_resource',{resource_name:name,quantity:qty,center_id:1});
+    console.log('Resource add success:',result);
+    alert('✅ Resource added successfully!');
+    closeResourceModal();
+    loadResourcesFull();
+    loadResources();
+  }catch(err){
+    console.error('Resource add error:',err);
+    alert('❌ Error adding resource:\n\n'+err.message+'\n\nCheck browser Console (F12) for details');
+  }
 }
+
 
 async function editResource(id, name, qty){
   const newQty = prompt(`Update quantity for ${name}:`, qty);
@@ -682,6 +730,15 @@ async function saveNotification(){
     alert('Error creating notification: ' + e.message);
   }
 }
+// Load Users Tab
+// Load Users Function - ADD THIS
+
+
+// View user details (optional)
+function viewUserDetails(userId) {
+  alert(`User details for ID: ${userId}\n\nThis can be expanded to show full user profile, activity logs, etc.`);
+}
+
 
 async function loadAll(){
   await Promise.all([loadDisasters(), loadNotifications(), loadReqs(), loadVolunteers(), loadResources()]);

@@ -13,6 +13,10 @@ if (strpos($path, $base) === 0) {
   $path = substr($path, strlen($base));
 }
 
+// Debug logging - remove after testing
+error_log("Full URI: " . ($_SERVER['REQUEST_URI'] ?? 'none'));
+error_log("Parsed path: " . $path);
+
 function getDB() {
   static $pdo = null;
   if ($pdo === null) {
@@ -348,26 +352,41 @@ if ($path === '/admin/add_resource') {
   exit;
 }
 
-if ($path === '/admin/update_resource') {
-  $input = json_decode(file_get_contents('php://input'), true);
-  $id = (int)($input['resource_id'] ?? 0);
-  $qty = (int)($input['quantity'] ?? 0);
-  
-  if (!$id) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Missing resource_id']);
+
+if ($path === '/admin/add_resource') {
+    $input = json_decode(file_get_contents('php://input'), true);
+    $name = $input['resource_name'] ?? '';
+    $qty = (int)($input['quantity'] ?? 0);
+    
+    if (!$name || $qty <= 0) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Resource name and quantity required']);
+        exit;
+    }
+    
+    try {
+        // Check if we have relief centers in the database
+        $centerCheck = getDB()->query("SELECT center_id FROM reliefcenter LIMIT 1")->fetch();
+        
+        if ($centerCheck) {
+            // If relief center exists, use it
+            $center_id = $centerCheck['center_id'];
+            $stmt = getDB()->prepare("INSERT INTO resources (resource_name, quantity_available, center_id) VALUES (?,?,?)");
+            $stmt->execute([$name, $qty, $center_id]);
+        } else {
+            // If no relief center exists, insert without center_id (allow NULL)
+            $stmt = getDB()->prepare("INSERT INTO resources (resource_name, quantity_available) VALUES (?,?)");
+            $stmt->execute([$name, $qty]);
+        }
+        
+        echo json_encode(['success' => true, 'message' => 'Resource added successfully!', 'id' => getDB()->lastInsertId()]);
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Add failed', 'detail' => $e->getMessage()]);
+    }
     exit;
-  }
-  
-  try {
-    getDB()->prepare("UPDATE resources SET quantity_available=? WHERE resource_id=?")->execute([$qty, $id]);
-    echo json_encode(['success' => true, 'message' => 'Resource updated']);
-  } catch (Exception $e) {
-    http_response_code(500);
-    echo json_encode(['error' => 'Update failed', 'detail' => $e->getMessage()]);
-  }
-  exit;
 }
+
 
 if ($path === '/user/request_resource') {
   $input = json_decode(file_get_contents('php://input'), true);
@@ -430,6 +449,37 @@ if ($path === '/user/message_admin') {
   }
   exit;
 }
+if ($path === '/admin/get_users') {
+  try {
+    $rows = getDB()->query("SELECT user_id, name, email, phone, created_at FROM normal_user ORDER BY created_at DESC")->fetchAll();
+    echo json_encode($rows);
+  } catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode(['error' => 'Query failed', 'detail' => $e->getMessage()]);
+  }
+  exit;
+}
+
+if ($path === '/admin/delete_user') {
+  $input = json_decode(file_get_contents('php://input'), true);
+  $id = (int)($input['user_id'] ?? 0);
+  
+  if (!$id) {
+    http_response_code(400);
+    echo json_encode(['error' => 'Missing user_id']);
+    exit;
+  }
+  
+  try {
+    getDB()->prepare("DELETE FROM normal_user WHERE user_id=?")->execute([$id]);
+    echo json_encode(['success' => true, 'message' => 'User deleted']);
+  } catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode(['error' => 'Delete failed', 'detail' => $e->getMessage()]);
+  }
+  exit;
+}
+
 
 if ($path === '/admin/delete_volunteer') {
   $input = json_decode(file_get_contents('php://input'), true);
@@ -450,6 +500,26 @@ if ($path === '/admin/delete_volunteer') {
   }
   exit;
 }
+if ($path === '/admin/delete_user') {
+  $input = json_decode(file_get_contents('php://input'), true);
+  $id = (int)($input['user_id'] ?? 0);
+  
+  if (!$id) {
+    http_response_code(400);
+    echo json_encode(['error' => 'Missing user_id']);
+    exit;
+  }
+  
+  try {
+    getDB()->prepare("DELETE FROM normal_user WHERE user_id=?")->execute([$id]);
+    echo json_encode(['success' => true, 'message' => 'User deleted']);
+  } catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode(['error' => 'Delete failed', 'detail' => $e->getMessage()]);
+  }
+  exit;
+}
+
 
 // UPDATED: Add notification with full admin name
 if ($path === '/admin/add_notification') {
@@ -489,6 +559,8 @@ if ($path === '/admin/resource_requests') {
   exit;
 }
 
+
+
 if ($path === '/admin/messages') {
   try{
     $sql = "SELECT m.*, u.name as user_name, a.username as admin_name, a.full_name as admin_full_name
@@ -504,6 +576,14 @@ if ($path === '/admin/messages') {
   }
   exit;
 }
+// Get all registered users (admin only)
+// NEW: Get all user logins (admin only)
+if ($route === '/admin/get_users' && $method === 'GET') {
+    $stmt = $pdo->query("SELECT user_id, name, email, phone, created_at FROM normal_user ORDER BY created_at DESC");
+    echo json_encode($stmt->fetchAll());
+    exit;
+}
+
 
 // 404
 http_response_code(404);
