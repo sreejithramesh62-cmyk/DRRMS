@@ -324,7 +324,13 @@ input::placeholder{color:#6b7280}
 </div>
 
 <script>
-const API='/api/index.php
+// Smart API path detection
+const API = window.location.hostname === 'localhost' 
+    ? '/drrms/api/index.php'  // Local XAMPP
+    : '/api/index.php';       // Production Render
+
+console.log('Using API:', API); // Debug line - shows which API path is being used
+
 
 function switchTab(tab){
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
